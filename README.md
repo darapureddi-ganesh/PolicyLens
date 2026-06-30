@@ -75,6 +75,31 @@ streamlit run app.py
 The app loads a bundled synthetic sample policy by default; you can also upload your own
 text-layer motor policy PDF from the sidebar.
 
+## Extending the Ontology for a New Insurer
+
+The fixed entity ontology in `src/entity_extractor.py` is tuned to the bundled
+template's wording. Parsing and clause-type classification already generalize
+to other insurers' PDFs, but entity recognition only matches phrases already
+in `ENTITY_ONTOLOGY` -- a policy using different terminology (e.g. "burglary"
+instead of "theft", or an add-on this ontology doesn't know) will parse fine
+but its clauses won't link to any entity node, so related queries return
+`UNKNOWN`.
+
+To extend coverage for a new policy:
+
+```bash
+python tools/ontology_gap_report.py path/to/policy.pdf
+```
+
+This reports the entity-match coverage percentage and lists every clause that
+has a recognized type (COVERAGE/EXCLUSION/DEDUCTIBLE/ADDON/CONDITION) but
+matched no ontology entity, grouped by type, with the raw clause text. For
+each gap clause, decide whether it's a synonym of an existing entity (add the
+phrase to that entity's pattern list) or a genuinely new concept (add a new
+`entity_key: (label, category, [patterns])` tuple to `MOTOR_ONTOLOGY` or
+`HEALTH_ONTOLOGY`), then re-run the report to confirm coverage improved.
+Rules are additive and reused across every future policy, not per-document.
+
 ## Non-Goals (v1)
 
 - No LLM, no embeddings, no vector database
